@@ -6,6 +6,8 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A LIFX restful client, for a bulb standing in for an addressable wireless mesh device.
@@ -22,18 +24,22 @@ public class LifxDeviceService implements DeviceService {
      */
     @Override
     public void toggleNightlight(String accessToken, String deviceId) throws IOException {
+
         URL url = new URL("https://api.lifx.com/v1/lights/" + deviceId + "/toggle");
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-        conn.setRequestProperty("Authorization","Bearer " + accessToken);
-        conn.setRequestProperty("Content-Type","application/json");
-        conn.setRequestMethod("POST");
 
-        conn.setDoOutput(true);
-        DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-        wr.flush();
-        wr.close();
+        try (AutoCloseable ac = () -> conn.disconnect()) {
+            conn.setRequestProperty("Authorization","Bearer " + accessToken);
+            conn.setRequestProperty("Content-Type","application/json");
+            conn.setRequestMethod("POST");
 
-        conn.getResponseCode();
-        conn.disconnect();
+            conn.setDoOutput(true);
+            DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
+            wr.flush();
+            wr.close();
+        }
+        catch (Exception ex) {
+            Logger.getAnonymousLogger().log(Level.WARNING, "Error connecting to LIFX-" + ex.getMessage());
+        }
     }
 }

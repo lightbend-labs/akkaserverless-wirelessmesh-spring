@@ -5,8 +5,8 @@
  import io.cloudstate.javasupport.eventsourced.*;
  import io.cloudstate.springboot.starter.CloudstateContext;
  import io.cloudstate.springboot.starter.CloudstateEntityBean;
-
  import org.springframework.beans.factory.annotation.Autowired;
+
  import wirelessmesh.DeviceService;
  import wirelessmesh.PubsubService;
  import wirelessmesh.Wirelessmesh.*;
@@ -17,6 +17,7 @@
  import java.util.List;
  import java.util.Optional;
  import java.util.stream.Collectors;
+ import java.util.stream.Stream;
 
  /**
   * A customer location entity.
@@ -77,7 +78,14 @@
          if (added) {
              ctx.fail("Customer location already added");
          }
-
+//         else if (addCustomerLocationCommand.getCustomerLocationId() == null
+//                 || addCustomerLocationCommand.getCustomerLocationId().matches("^[a-zA-Z0-9]*$")) {
+//             ctx.fail("Customer location id must be alphanumeric and not null");
+//         }
+//         else if (addCustomerLocationCommand.getAccessToken() == null
+//                 || addCustomerLocationCommand.getAccessToken().matches("^[a-zA-Z0-9]*$")) {
+//             ctx.fail("Access token must be alphanumeric and not null");
+//         }
          CustomerLocationAdded event = CustomerLocationAdded.newBuilder()
                  .setCustomerLocationId(addCustomerLocationCommand.getCustomerLocationId())
                  .setAccessToken(addCustomerLocationCommand.getAccessToken())
@@ -149,10 +157,13 @@
          if (removed) {
              ctx.fail("customerLocation does not exist.");
          }
-
-         if (findDevice(activateDeviceCommand.getDeviceId()).isPresent()) {
+         else if (findDevice(activateDeviceCommand.getDeviceId()).isPresent()) {
              ctx.fail("Device already activated");
          }
+//         else if (activateDeviceCommand.getDeviceId() == null
+//                 || activateDeviceCommand.getDeviceId().matches("^[a-zA-Z0-9]*$")) {
+//             ctx.fail("Device id must be alphanumeric and not null");
+//         }
 
          DeviceActivated event = DeviceActivated.newBuilder()
                  .setDeviceId(activateDeviceCommand.getDeviceId())
@@ -306,7 +317,7 @@
 
      /**
       * This is the command handler geting the current state of the devices as defined in protobuf.
-      * @param GetCustomerLocationCommand the command message from protobuf
+      * @param getCustomerLocationCommand the command message from protobuf
       * @param ctx the application context
       * @return Empty (unused)
       */
@@ -327,27 +338,18 @@
       * Helper function to find a device in the device collection.
       */
      private Optional<Device> findDevice(String deviceId) {
-         List<Device> filtered = devices.stream()
+         return devices.stream()
                  .filter(d -> d.getDeviceId().equals(deviceId))
-                 .collect(Collectors.toList());
-
-         if (filtered.size() == 0) {
-             return Optional.empty();
-         }
-         else {
-             return Optional.of(filtered.get(0));
-         }
+                 .findFirst();
      }
 
      /**
       * Helper function to replace the state of a given device within the device collection.
       */
      private void replaceDevice(Device device) {
-         List<Device> filtered = devices.stream()
-                 .filter(d -> !d.getDeviceId().equals(device.getDeviceId()))
+         devices = Stream.concat(devices.stream()
+                         .filter(d -> !d.getDeviceId().equals(device.getDeviceId())),
+                 Stream.of(device))
                  .collect(Collectors.toList());
-
-         filtered.add(device);
-         devices = filtered;
      }
  }
