@@ -1,12 +1,10 @@
  package wirelessmesh.domain;
 
  import com.google.protobuf.Empty;
- import io.cloudstate.javasupport.EntityId;
  import io.cloudstate.javasupport.eventsourced.*;
- import io.cloudstate.springboot.starter.CloudstateContext;
  import io.cloudstate.springboot.starter.CloudstateEntityBean;
- import org.springframework.beans.factory.annotation.Autowired;
 
+ import org.springframework.beans.factory.annotation.Autowired;
  import wirelessmesh.DeviceService;
  import wirelessmesh.PubsubService;
  import wirelessmesh.Wirelessmesh.*;
@@ -34,9 +32,6 @@
  @EventSourcedEntity
  public class CustomerLocationEntity {
 
-     @CloudstateContext
-     private EventSourcedContext context;
-
      private final DeviceService deviceService;
 
      private final PubsubService pubsubService;
@@ -44,9 +39,6 @@
      /**
       * This section contains the private state variables necessary for this entity.
       */
-
-     //@EntityId
-     private String customerLocationId;
 
      private boolean added = false;
 
@@ -58,13 +50,11 @@
 
      /**
       * Constructor with service autowiring.
-      * @param entityId String the entity id, which will be our customer location id
       * @param deviceService DeviceService to communicate with physical devices
       * @param pubsubService PubsubService to publish events to external
       */
      @Autowired
-     public CustomerLocationEntity(@EntityId String entityId, DeviceService deviceService, PubsubService pubsubService) {
-         customerLocationId = entityId;
+     public CustomerLocationEntity(DeviceService deviceService, PubsubService pubsubService) {
          this.deviceService = deviceService;
          this.pubsubService = pubsubService;
      }
@@ -80,7 +70,7 @@
          if (added) {
              ctx.fail("Customer location already added");
          }
-         else if (!isAlphaNumeric(customerLocationId)) {
+         else if (!isAlphaNumeric(addCustomerLocationCommand.getCustomerLocationId())) {
              ctx.fail("Customer location id must be alphanumeric");
          }
          else if (!isAlphaNumeric(addCustomerLocationCommand.getAccessToken())) {
@@ -123,7 +113,7 @@
          if (!added) {
              ctx.fail("Customer location does not exist");
          }
-         if (removed) {
+         else if (removed) {
              ctx.fail("Customer location already removed");
          }
          else {
@@ -171,7 +161,7 @@
          else {
              DeviceActivated event = DeviceActivated.newBuilder()
                      .setDeviceId(activateDeviceCommand.getDeviceId())
-                     .setCustomerLocationId(customerLocationId)
+                     .setCustomerLocationId(activateDeviceCommand.getCustomerLocationId())
                      .build();
 
              ctx.emit(event);
@@ -191,7 +181,7 @@
      public void deviceActivated(DeviceActivated deviceActivated) {
          devices.add(Device.newBuilder()
                  .setDeviceId(deviceActivated.getDeviceId())
-                 .setCustomerLocationId(customerLocationId)
+                 .setCustomerLocationId(deviceActivated.getCustomerLocationId())
                  .setActivated(true)
                  .setNightlightOn(false)
                  .build());
@@ -214,7 +204,7 @@
          else {
              DeviceRemoved event = DeviceRemoved.newBuilder()
                      .setDeviceId(removeDeviceCommand.getDeviceId())
-                     .setCustomerLocationId(customerLocationId).build();
+                     .setCustomerLocationId(removeDeviceCommand.getCustomerLocationId()).build();
 
              ctx.emit(event);
              pubsubService.publish(event.toByteString());
@@ -255,7 +245,7 @@
          else {
              RoomAssigned event = RoomAssigned.newBuilder()
                      .setDeviceId(assignRoomCommand.getDeviceId())
-                     .setCustomerLocationId(customerLocationId)
+                     .setCustomerLocationId(assignRoomCommand.getCustomerLocationId())
                      .setRoom(assignRoomCommand.getRoom()).build();
 
              ctx.emit(event);
@@ -301,7 +291,7 @@
              else {
                  NightlightToggled event = NightlightToggled.newBuilder()
                          .setDeviceId(toggleNightlightCommand.getDeviceId())
-                         .setCustomerLocationId(customerLocationId)
+                         .setCustomerLocationId(toggleNightlightCommand.getCustomerLocationId())
                          .setNightlightOn(!deviceMaybe.get().getNightlightOn()).build();
 
                  ctx.emit(event);
@@ -340,8 +330,8 @@
          if (removed || !added) {
              ctx.fail("customerLocation does not exist.");
          }
-         
-         return CustomerLocation.newBuilder().setCustomerLocationId(customerLocationId)
+
+         return CustomerLocation.newBuilder().setCustomerLocationId(getCustomerLocationCommand.getCustomerLocationId())
                  .setAccessToken(accessToken)
                  .setAdded(added)
                  .setRemoved(removed)

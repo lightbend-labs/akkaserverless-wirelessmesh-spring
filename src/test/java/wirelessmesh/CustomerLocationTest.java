@@ -39,7 +39,7 @@ public class CustomerLocationTest {
         String badCustomerLocationId = "bad/id";
         PubsubService pubsubService = Mockito.mock(GooglePubsubService.class);
         CommandContext context = Mockito.mock(CommandContext.class);
-        CustomerLocationEntity customerLocation = new CustomerLocationEntity(badCustomerLocationId, null,
+        CustomerLocationEntity customerLocation = new CustomerLocationEntity(null,
                 pubsubService);
 
         customerLocation.addCustomerLocation(AddCustomerLocationCommand.newBuilder()
@@ -55,7 +55,7 @@ public class CustomerLocationTest {
     public void addCustomerLocationWithBadAccessTokenTest() {
         PubsubService pubsubService = Mockito.mock(GooglePubsubService.class);
         CommandContext context = Mockito.mock(CommandContext.class);
-        CustomerLocationEntity customerLocation = new CustomerLocationEntity(defaultCustomerLocationId, null,
+        CustomerLocationEntity customerLocation = new CustomerLocationEntity(null,
                 pubsubService);
 
         customerLocation.addCustomerLocation(AddCustomerLocationCommand.newBuilder()
@@ -126,6 +126,7 @@ public class CustomerLocationTest {
 
         entity.assignRoom(AssignRoomCommand.newBuilder()
                 .setDeviceId("deviceId2")
+                .setCustomerLocationId(defaultCustomerLocationId)
                 .setRoom(room)
                 .build()
                 , context);
@@ -167,6 +168,7 @@ public class CustomerLocationTest {
 
         entity.toggleNightlight(ToggleNightlightCommand.newBuilder()
                         .setDeviceId("deviceId2")
+                        .setCustomerLocationId(defaultCustomerLocationId)
                         .build()
                 , context);
 
@@ -192,7 +194,7 @@ public class CustomerLocationTest {
     private CustomerLocationEntity createAndAddCustomerLocation(String customerLocationId, DeviceService deviceService,
                                                                 PubsubService pubsubService) {
         CommandContext context = Mockito.mock(CommandContext.class);
-        CustomerLocationEntity customerLocation = new CustomerLocationEntity(customerLocationId, deviceService,
+        CustomerLocationEntity customerLocation = new CustomerLocationEntity(deviceService,
                 pubsubService);
 
         CustomerLocationAdded added = CustomerLocationAdded.newBuilder()
@@ -218,7 +220,6 @@ public class CustomerLocationTest {
         CommandContext context = Mockito.mock(CommandContext.class);
         DeviceActivated activated = DeviceActivated.newBuilder()
                 .setCustomerLocationId(defaultCustomerLocationId)
-                //.setCustomerLocationId(null)
                 .setDeviceId(deviceId)
                 .build();
 

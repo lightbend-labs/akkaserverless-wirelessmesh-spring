@@ -10,6 +10,10 @@
 
     <packaging>jar</packaging>
 
+    <properties>
+        <main.class>wirelessmesh.Main</main.class>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -66,8 +70,11 @@
                 <version>1.6.0</version>
             </extension>
         </extensions>
-
         <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -77,7 +84,6 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
@@ -94,7 +100,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
@@ -138,5 +143,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
