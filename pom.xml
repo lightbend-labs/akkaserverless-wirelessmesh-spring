@@ -45,9 +45,9 @@
             <artifactId>google-cloud-pubsub</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>6.8</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>2.2.4.RELEASE</version>
             <scope>test</scope>
         </dependency>
         <dependency>

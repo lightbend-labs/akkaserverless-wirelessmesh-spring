@@ -45,7 +45,7 @@
       * This section contains the private state variables necessary for this entity.
       */
 
-     @EntityId
+     //@EntityId
      private String customerLocationId;
 
      private boolean added = false;
@@ -58,11 +58,13 @@
 
      /**
       * Constructor with service autowiring.
+      * @param entityId String the entity id, which will be our customer location id
       * @param deviceService DeviceService to communicate with physical devices
       * @param pubsubService PubsubService to publish events to external
       */
      @Autowired
-     public CustomerLocationEntity(DeviceService deviceService, PubsubService pubsubService) {
+     public CustomerLocationEntity(@EntityId String entityId, DeviceService deviceService, PubsubService pubsubService) {
+         customerLocationId = entityId;
          this.deviceService = deviceService;
          this.pubsubService = pubsubService;
      }
@@ -78,21 +80,22 @@
          if (added) {
              ctx.fail("Customer location already added");
          }
-//         else if (addCustomerLocationCommand.getCustomerLocationId() == null
-//                 || addCustomerLocationCommand.getCustomerLocationId().matches("^[a-zA-Z0-9]*$")) {
-//             ctx.fail("Customer location id must be alphanumeric and not null");
-//         }
-//         else if (addCustomerLocationCommand.getAccessToken() == null
-//                 || addCustomerLocationCommand.getAccessToken().matches("^[a-zA-Z0-9]*$")) {
-//             ctx.fail("Access token must be alphanumeric and not null");
-//         }
-         CustomerLocationAdded event = CustomerLocationAdded.newBuilder()
-                 .setCustomerLocationId(addCustomerLocationCommand.getCustomerLocationId())
-                 .setAccessToken(addCustomerLocationCommand.getAccessToken())
-                 .build();
+         else if (!isAlphaNumeric(customerLocationId)) {
+             ctx.fail("Customer location id must be alphanumeric");
+         }
+         else if (!isAlphaNumeric(addCustomerLocationCommand.getAccessToken())) {
+             ctx.fail("Access token must be alphanumeric");
+         }
+         else {
+             CustomerLocationAdded event = CustomerLocationAdded.newBuilder()
+                     .setCustomerLocationId(addCustomerLocationCommand.getCustomerLocationId())
+                     .setAccessToken(addCustomerLocationCommand.getAccessToken())
+                     .build();
 
-         ctx.emit(event);
-         pubsubService.publish(event.toByteString());
+             ctx.emit(event);
+             pubsubService.publish(event.toByteString());
+         }
+
          return Empty.getDefaultInstance();
      }
 
@@ -123,13 +126,15 @@
          if (removed) {
              ctx.fail("Customer location already removed");
          }
+         else {
+             CustomerLocationRemoved event = CustomerLocationRemoved.newBuilder()
+                     .setCustomerLocationId(removeCustomerLocationCommand.getCustomerLocationId())
+                     .build();
 
-         CustomerLocationRemoved event = CustomerLocationRemoved.newBuilder()
-                 .setCustomerLocationId(removeCustomerLocationCommand.getCustomerLocationId())
-                 .build();
+             ctx.emit(event);
+             pubsubService.publish(event.toByteString());
+         }
 
-         ctx.emit(event);
-         pubsubService.publish(event.toByteString());
          return Empty.getDefaultInstance();
      }
 
@@ -160,18 +165,19 @@
          else if (findDevice(activateDeviceCommand.getDeviceId()).isPresent()) {
              ctx.fail("Device already activated");
          }
-//         else if (activateDeviceCommand.getDeviceId() == null
-//                 || activateDeviceCommand.getDeviceId().matches("^[a-zA-Z0-9]*$")) {
-//             ctx.fail("Device id must be alphanumeric and not null");
-//         }
+         else if (!isAlphaNumeric(activateDeviceCommand.getDeviceId())) {
+             ctx.fail("Device id must be alphanumeric");
+         }
+         else {
+             DeviceActivated event = DeviceActivated.newBuilder()
+                     .setDeviceId(activateDeviceCommand.getDeviceId())
+                     .setCustomerLocationId(customerLocationId)
+                     .build();
 
-         DeviceActivated event = DeviceActivated.newBuilder()
-                 .setDeviceId(activateDeviceCommand.getDeviceId())
-                 .setCustomerLocationId(customerLocationId)
-                 .build();
+             ctx.emit(event);
+             pubsubService.publish(event.toByteString());
+         }
 
-         ctx.emit(event);
-         pubsubService.publish(event.toByteString());
          return Empty.getDefaultInstance();
      }
 
@@ -202,17 +208,18 @@
          if (!added || removed) {
              ctx.fail("customerLocation does not exist.");
          }
-
-         if (!findDevice(removeDeviceCommand.getDeviceId()).isPresent()) {
+         else if (!findDevice(removeDeviceCommand.getDeviceId()).isPresent()) {
              ctx.fail("Device does not exist");
          }
+         else {
+             DeviceRemoved event = DeviceRemoved.newBuilder()
+                     .setDeviceId(removeDeviceCommand.getDeviceId())
+                     .setCustomerLocationId(customerLocationId).build();
 
-         DeviceRemoved event = DeviceRemoved.newBuilder()
-                 .setDeviceId(removeDeviceCommand.getDeviceId())
-                 .setCustomerLocationId(customerLocationId).build();
+             ctx.emit(event);
+             pubsubService.publish(event.toByteString());
+         }
 
-         ctx.emit(event);
-         pubsubService.publish(event.toByteString());
          return Empty.getDefaultInstance();
      }
 
@@ -239,18 +246,22 @@
          if (removed) {
              ctx.fail("customerLocation does not exist.");
          }
-
-         if (!findDevice(assignRoomCommand.getDeviceId()).isPresent()) {
+         else if (!findDevice(assignRoomCommand.getDeviceId()).isPresent()) {
              ctx.fail("Device does not exist");
          }
+         else if (!isAlphaNumeric(assignRoomCommand.getRoom())) {
+             ctx.fail("Room must be alphanumeric");
+         }
+         else {
+             RoomAssigned event = RoomAssigned.newBuilder()
+                     .setDeviceId(assignRoomCommand.getDeviceId())
+                     .setCustomerLocationId(customerLocationId)
+                     .setRoom(assignRoomCommand.getRoom()).build();
 
-         RoomAssigned event = RoomAssigned.newBuilder()
-                 .setDeviceId(assignRoomCommand.getDeviceId())
-                 .setCustomerLocationId(customerLocationId)
-                 .setRoom(assignRoomCommand.getRoom()).build();
+             ctx.emit(event);
+             pubsubService.publish(event.toByteString());
+         }
 
-         ctx.emit(event);
-         pubsubService.publish(event.toByteString());
          return Empty.getDefaultInstance();
      }
 
@@ -281,21 +292,24 @@
          if (removed) {
              ctx.fail("customerLocation does not exist.");
          }
+         else {
+             Optional<Device> deviceMaybe = findDevice(toggleNightlightCommand.getDeviceId());
 
-         Optional<Device> deviceMaybe = findDevice(toggleNightlightCommand.getDeviceId());
+             if (!deviceMaybe.isPresent()) {
+                 ctx.fail("Device does not exist");
+             }
+             else {
+                 NightlightToggled event = NightlightToggled.newBuilder()
+                         .setDeviceId(toggleNightlightCommand.getDeviceId())
+                         .setCustomerLocationId(customerLocationId)
+                         .setNightlightOn(!deviceMaybe.get().getNightlightOn()).build();
 
-         if (!deviceMaybe.isPresent()) {
-             ctx.fail("Device does not exist");
+                 ctx.emit(event);
+                 deviceService.toggleNightlight(accessToken, toggleNightlightCommand.getDeviceId());
+                 pubsubService.publish(event.toByteString());
+             }
          }
 
-         NightlightToggled event = NightlightToggled.newBuilder()
-                 .setDeviceId(toggleNightlightCommand.getDeviceId())
-                 .setCustomerLocationId(customerLocationId)
-                 .setNightlightOn(!deviceMaybe.get().getNightlightOn()).build();
-
-         ctx.emit(event);
-         deviceService.toggleNightlight(accessToken, toggleNightlightCommand.getDeviceId());
-         pubsubService.publish(event.toByteString());
          return Empty.getDefaultInstance();
      }
 
@@ -326,7 +340,7 @@
          if (removed || !added) {
              ctx.fail("customerLocation does not exist.");
          }
-
+         
          return CustomerLocation.newBuilder().setCustomerLocationId(customerLocationId)
                  .setAccessToken(accessToken)
                  .setAdded(added)
@@ -351,5 +365,9 @@
                          .filter(d -> !d.getDeviceId().equals(device.getDeviceId())),
                  Stream.of(device))
                  .collect(Collectors.toList());
+     }
+
+     private boolean isAlphaNumeric(String id) {
+         return id.matches("^[a-zA-Z0-9_-]*$");
      }
  }

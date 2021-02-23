@@ -34,9 +34,10 @@ public class LifxDeviceService implements DeviceService {
             conn.setRequestMethod("POST");
 
             conn.setDoOutput(true);
-            DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-            wr.flush();
-            wr.close();
+
+            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
+                wr.flush();
+            }
         }
         catch (Exception ex) {
             Logger.getAnonymousLogger().log(Level.WARNING, "Error connecting to LIFX-" + ex.getMessage());
