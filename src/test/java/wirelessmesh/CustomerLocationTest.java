@@ -209,7 +209,6 @@ public class CustomerLocationTest {
 
         Mockito.verify(context).emit(added);
         Mockito.verify(pubsubService).publish(added.toByteString());
-
         customerLocation.customerLocationAdded(added); // Simulate event callback to drive state change.
 
         return customerLocation;
